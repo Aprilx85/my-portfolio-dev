@@ -1,0 +1,109 @@
+---
+title: "Getting Started with Next.js App Router"
+date: "2025-01-15"
+description: "A practical intro to Next.js App Router — how it works, what changed from Pages Router, and how to build your first route with React Server Components."
+tags: ["Next.js", "React", "Web Development"]
+coverImage: ""
+---
+
+## Introduction
+
+Next.js introduced a more powerful routing system called the **App Router**. If you've used the Pages Router before, some concepts will feel familiar — but there are important differences worth understanding before you start a new project.
+
+In this post I'll walk through the core ideas and share what I've learned building with it in production.
+
+## What's Different About the App Router?
+
+The biggest change is **React Server Components** (RSC) by default. Every component in the `app/` directory is a server component unless you mark it `"use client"`.
+
+This means:
+- Less JavaScript shipped to the browser
+- Data fetching happens on the server, closer to the data source
+- Better performance and Core Web Vitals out of the box
+
+## File-based Routing
+
+Create a folder with a `page.tsx` file and you have a route. Simple.
+
+```tsx
+// app/about/page.tsx
+export default function AboutPage() {
+  return <h1>About Me</h1>;
+}
+```
+
+Nested folders become nested routes:
+
+```
+app/
+  blog/
+    page.tsx        → /blog
+    [slug]/
+      page.tsx      → /blog/:slug
+```
+
+## Layouts
+
+Layouts wrap pages and persist across navigation without re-rendering:
+
+```tsx
+// app/layout.tsx
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <nav>My Nav</nav>
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+You can have nested layouts too — great for dashboard-style UIs.
+
+## Data Fetching
+
+Fetch data directly in server components using standard `fetch`:
+
+```tsx
+async function getPosts() {
+  const res = await fetch("https://api.example.com/posts", {
+    next: { revalidate: 3600 }, // ISR: revalidate every hour
+  });
+  return res.json();
+}
+
+export default async function PostsPage() {
+  const posts = await getPosts();
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+No `getStaticProps`, no `getServerSideProps` — just `async/await` in the component.
+
+## When to Use `"use client"`
+
+You only need `"use client"` when a component:
+
+- Uses React hooks (`useState`, `useEffect`, etc.)
+- Handles browser events (`onClick`, `onChange`)
+- Uses browser-only APIs (`localStorage`, `window`)
+
+Push `"use client"` as far down the tree as possible to keep most of your app on the server.
+
+## Conclusion
+
+The App Router is a significant improvement for most use cases. The mental model is cleaner once it clicks: server components are the default, client components are the exception.
+
+Start with server components and only reach for `"use client"` when you need interactivity. Your bundle size will thank you.
